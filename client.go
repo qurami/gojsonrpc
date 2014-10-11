@@ -90,7 +90,7 @@ func (this *Client) Notify(method string, params interface{}) error {
 		return err
 	}
 
-    asd, err := this.sendJsonRequest(requestJson)
+    _, err = this.sendJsonRequest(requestJson)
     if err != nil {
     	return err
     }
