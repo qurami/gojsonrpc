@@ -1,12 +1,12 @@
-package jsonrpc
+package gojsonrpc
 
 import (
-	"time"
 	"encoding/json"
-	"net/http"
-	"strings"
 	"errors"
 	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
 )
 
 type Client struct {
@@ -14,8 +14,8 @@ type Client struct {
 	Timeout int
 }
 
-func NewClient(url string) Client {
-	client := Client{}
+func NewClient(url string) *Client {
+	client := new(Client)
 
 	client.Url = url
 	client.Timeout = 5
@@ -26,14 +26,14 @@ func NewClient(url string) Client {
 func (this *Client) sendJsonRequest(jsonRequest []byte) ([]byte, error) {
 	var jsonResponse []byte
 
-	httpClient := &http.Client {
+	httpClient := &http.Client{
 		Timeout: time.Duration(time.Duration(this.Timeout) * time.Second),
 	}
 
 	httpRequest, err := http.NewRequest("POST", this.Url, strings.NewReader(string(jsonRequest)))
-    httpRequest.Header.Set("Content-Type", "application/json")
-    httpRequest.Header.Set("Content-Length", "")
-    httpRequest.Header.Set("Accept", "application/json")
+	httpRequest.Header.Set("Content-Type", "application/json")
+	httpRequest.Header.Set("Content-Length", "")
+	httpRequest.Header.Set("Accept", "application/json")
 
 	httpResponse, err := httpClient.Do(httpRequest)
 	if err != nil {
@@ -62,13 +62,13 @@ func (this *Client) Run(method string, params interface{}, result interface{}) e
 		return err
 	}
 
-    jsonResponse, err := this.sendJsonRequest(jsonRequest)
-    if err != nil {
-    	return err
-    }
+	jsonResponse, err := this.sendJsonRequest(jsonRequest)
+	if err != nil {
+		return err
+	}
 
 	response := NewResponse()
-	response.Result = result	
+	response.Result = result
 
 	err = json.Unmarshal(jsonResponse, &response)
 	if err != nil {
@@ -90,10 +90,10 @@ func (this *Client) Notify(method string, params interface{}) error {
 		return err
 	}
 
-    _, err = this.sendJsonRequest(requestJson)
-    if err != nil {
-    	return err
-    }
+	_, err = this.sendJsonRequest(requestJson)
+	if err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }

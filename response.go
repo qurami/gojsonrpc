@@ -1,4 +1,4 @@
-package jsonrpc
+package gojsonrpc
 
 type ResponseError struct {
 	Code    int    `json:"code"`

@@ -1,4 +1,4 @@
-package jsonrpc
+package gojsonrpc
 
 type Request struct {
 	Jsonrpc string      `json:"jsonrpc"`
@@ -8,7 +8,7 @@ type Request struct {
 }
 
 func NewRequest(method string, params interface{}, id int) Request {
-	request := Request {
+	request := Request{
 		"2.0",
 		method,
 		params,
