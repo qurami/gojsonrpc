@@ -34,6 +34,7 @@ func (this *Client) sendJsonRequest(jsonRequest []byte) ([]byte, error) {
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Content-Length", "")
 	httpRequest.Header.Set("Accept", "application/json")
+	httpRequest.Header.Set("Connection", "close")
 
 	httpResponse, err := httpClient.Do(httpRequest)
 	if err != nil {
