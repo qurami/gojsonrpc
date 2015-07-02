@@ -5,12 +5,12 @@ import (
 	"strings"
 )
 
-type JSONRPCPool struct {
+type Pool struct {
 	clients chan (*Client)
 }
 
-func NewJSONRPCPool(url string, n int) *JSONRPCPool {
-	pool := new(JSONRPCPool)
+func NewPool(url string, n int) *Pool {
+	pool := new(Pool)
 	pool.clients = make(chan (*Client), n)
 
 	for i := 0; i < n; i++ {
@@ -21,15 +21,15 @@ func NewJSONRPCPool(url string, n int) *JSONRPCPool {
 	return pool
 }
 
-func (this *JSONRPCPool) getClient() *Client {
+func (this *Pool) getClient() *Client {
 	return <-this.clients
 }
 
-func (this *JSONRPCPool) releaseClient(c *Client) {
+func (this *Pool) releaseClient(c *Client) {
 	this.clients <- c
 }
 
-func (this *JSONRPCPool) Do(command, methodName string, params interface{}, result interface{}) error {
+func (this *Pool) Do(command, methodName string, params interface{}, result interface{}) error {
 	c := this.getClient()
 	defer this.releaseClient(c)
 
