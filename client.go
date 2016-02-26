@@ -18,7 +18,7 @@ func NewClient(url string) *Client {
 	client := new(Client)
 
 	client.Url = url
-	client.Timeout = 60
+	client.Timeout = 120
 
 	return client
 }
