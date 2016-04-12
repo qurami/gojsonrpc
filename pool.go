@@ -41,7 +41,10 @@ func (this *Pool) Do(command, methodName string, params interface{}, result inte
 		}
 		break
 	case "notify":
-		c.Notify(methodName, params)
+		err := c.Notify(methodName, params)
+		if err != nil {
+			return err
+		}
 		break
 	default:
 		return errors.New("Invalid JSONRPC command")
