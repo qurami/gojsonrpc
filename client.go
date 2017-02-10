@@ -1,6 +1,7 @@
 package gojsonrpc
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -28,6 +29,11 @@ func (this *Client) sendJsonRequest(jsonRequest []byte) ([]byte, error) {
 
 	httpClient := &http.Client{
 		Timeout: time.Duration(time.Duration(this.Timeout) * time.Second),
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 
 	httpRequest, err := http.NewRequest("POST", this.Url, strings.NewReader(string(jsonRequest)))
