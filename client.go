@@ -10,25 +10,27 @@ import (
 	"time"
 )
 
+// Client executes JSON RPC calls to remote servers.
 type Client struct {
-	Url     string
+	URL     string
 	Timeout int
 }
 
+// NewClient returns a newly istantiated Client pointing to the given url.
 func NewClient(url string) *Client {
 	client := new(Client)
 
-	client.Url = url
-	client.Timeout = DEFAULT_TIMEOUT
+	client.URL = url
+	client.Timeout = defaultTimeout
 
 	return client
 }
 
-func (this *Client) sendJsonRequest(jsonRequest []byte) ([]byte, error) {
+func (c *Client) sendJSONRequest(jsonRequest []byte) ([]byte, error) {
 	var jsonResponse []byte
 
 	httpClient := &http.Client{
-		Timeout: time.Duration(time.Duration(this.Timeout) * time.Second),
+		Timeout: time.Duration(time.Duration(c.Timeout) * time.Second),
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
@@ -36,7 +38,7 @@ func (this *Client) sendJsonRequest(jsonRequest []byte) ([]byte, error) {
 		},
 	}
 
-	httpRequest, err := http.NewRequest("POST", this.Url, strings.NewReader(string(jsonRequest)))
+	httpRequest, err := http.NewRequest("POST", c.URL, strings.NewReader(string(jsonRequest)))
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Content-Length", "")
 	httpRequest.Header.Set("Accept", "application/json")
@@ -57,11 +59,14 @@ func (this *Client) sendJsonRequest(jsonRequest []byte) ([]byte, error) {
 	return jsonResponse, nil
 }
 
-func (this *Client) SetTimeout(timeout int) {
-	this.Timeout = timeout
+// SetTimeout sets the client timeout to the given value.
+func (c *Client) SetTimeout(timeout int) {
+	c.Timeout = timeout
 }
 
-func (this *Client) Run(method string, params interface{}, result interface{}) error {
+// Run executes the given method having the given params setting the response
+// value in the given result interface.
+func (c *Client) Run(method string, params interface{}, result interface{}) error {
 	request := NewRequest(method, params, RandInt(10000000, 99999999))
 
 	jsonRequest, err := json.Marshal(request)
@@ -69,7 +74,7 @@ func (this *Client) Run(method string, params interface{}, result interface{}) e
 		return err
 	}
 
-	jsonResponse, err := this.sendJsonRequest(jsonRequest)
+	jsonResponse, err := c.sendJSONRequest(jsonRequest)
 	if err != nil {
 		return err
 	}
@@ -89,15 +94,17 @@ func (this *Client) Run(method string, params interface{}, result interface{}) e
 	return nil
 }
 
-func (this *Client) Notify(method string, params interface{}) error {
+// Notify executes the given method with the given parameters.
+// Doesn't expect any result.
+func (c *Client) Notify(method string, params interface{}) error {
 	request := NewRequest(method, params, 0)
 
-	requestJson, err := json.Marshal(request)
+	jsonRequest, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
 
-	_, err = this.sendJsonRequest(requestJson)
+	_, err = c.sendJSONRequest(jsonRequest)
 	if err != nil {
 		return err
 	}

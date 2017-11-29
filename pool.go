@@ -5,14 +5,16 @@ import (
 	"strings"
 )
 
+// Pool executes JSON RPC calls to remote servers using a pool of Clients.
 type Pool struct {
 	clients chan (*Client)
 }
 
+// NewPool returns a newly initialized Pool of clients pointing to the given url.
 func NewPool(url string, n int, additionalParameters ...interface{}) *Pool {
 	pool := new(Pool)
 	pool.clients = make(chan (*Client), n)
-	timeout := DEFAULT_TIMEOUT
+	timeout := defaultTimeout
 
 	if len(additionalParameters) == 1 {
 		timeoutIntVal, ok := additionalParameters[0].(int)
@@ -30,17 +32,19 @@ func NewPool(url string, n int, additionalParameters ...interface{}) *Pool {
 	return pool
 }
 
-func (this *Pool) getClient() *Client {
-	return <-this.clients
+func (p *Pool) getClient() *Client {
+	return <-p.clients
 }
 
-func (this *Pool) releaseClient(c *Client) {
-	this.clients <- c
+func (p *Pool) releaseClient(c *Client) {
+	p.clients <- c
 }
 
-func (this *Pool) Do(command, methodName string, params interface{}, result interface{}) error {
-	c := this.getClient()
-	defer this.releaseClient(c)
+// Do executes the given command (Run or Notify) using the given methodName and params
+// and building the response in the given result interface.
+func (p *Pool) Do(command, methodName string, params interface{}, result interface{}) error {
+	c := p.getClient()
+	defer p.releaseClient(c)
 
 	switch strings.ToLower(command) {
 	case "run":
