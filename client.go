@@ -13,68 +13,35 @@ import (
 
 // Client executes JSON RPC calls to remote servers.
 type Client struct {
-	URL     string
-	Timeout int
+	URL string
 
-	proxyAddress string
+	timeout    int
+	proxyURL   string
+	httpClient *http.Client
 }
 
 // NewClient returns a newly istantiated Client pointing to the given url.
 func NewClient(url string) *Client {
-	return &Client{
-		URL:     url,
-		Timeout: defaultTimeout,
+	client := &Client{
+		URL:      url,
+		timeout:  defaultTimeout,
+		proxyURL: "",
 	}
-}
+	client.setHTTPClient()
 
-func (c *Client) sendJSONRequest(jsonRequest []byte) ([]byte, error) {
-	var jsonResponse []byte
-
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-		Proxy: http.ProxyFromEnvironment,
-	}
-
-	if proxyURL, err := url.Parse(c.proxyAddress); c.proxyAddress != "" && err == nil {
-		transport.Proxy = http.ProxyURL(proxyURL)
-	}
-
-	httpClient := &http.Client{
-		Timeout:   time.Duration(time.Duration(c.Timeout) * time.Second),
-		Transport: transport,
-	}
-
-	httpRequest, err := http.NewRequest("POST", c.URL, strings.NewReader(string(jsonRequest)))
-	httpRequest.Header.Set("Content-Type", "application/json")
-	httpRequest.Header.Set("Content-Length", "")
-	httpRequest.Header.Set("Accept", "application/json")
-	httpRequest.Header.Set("Connection", "close")
-
-	httpResponse, err := httpClient.Do(httpRequest)
-	if err != nil {
-		return jsonResponse, err
-	}
-
-	defer httpResponse.Body.Close()
-
-	jsonResponse, err = ioutil.ReadAll(httpResponse.Body)
-	if err != nil {
-		return jsonResponse, err
-	}
-
-	return jsonResponse, nil
+	return client
 }
 
 // SetTimeout sets the client timeout to the given value.
 func (c *Client) SetTimeout(timeout int) {
-	c.Timeout = timeout
+	c.timeout = timeout
+	c.setHTTPClient()
 }
 
 // SetHTTPProxy tells the client to use the given httpProxyURL as proxy address.
 func (c *Client) SetHTTPProxy(httpProxyURL string) {
-	c.proxyAddress = httpProxyURL
+	c.proxyURL = httpProxyURL
+	c.setHTTPClient()
 }
 
 // Run executes the given method having the given params setting the response
@@ -123,4 +90,48 @@ func (c *Client) Notify(method string, params interface{}) error {
 	}
 
 	return nil
+}
+
+func (c *Client) setHTTPClient() {
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		Proxy: http.ProxyFromEnvironment,
+	}
+
+	if parsedProxyURL, err := url.Parse(c.proxyURL); c.proxyURL != "" && err == nil {
+		transport.Proxy = http.ProxyURL(parsedProxyURL)
+	}
+
+	newHTTPClient := &http.Client{
+		Timeout:   time.Duration(time.Duration(c.timeout) * time.Second),
+		Transport: transport,
+	}
+
+	c.httpClient = newHTTPClient
+}
+
+func (c *Client) sendJSONRequest(jsonRequest []byte) ([]byte, error) {
+	var jsonResponse []byte
+
+	httpRequest, err := http.NewRequest("POST", c.URL, strings.NewReader(string(jsonRequest)))
+	httpRequest.Header.Set("Content-Type", "application/json")
+	httpRequest.Header.Set("Content-Length", "")
+	httpRequest.Header.Set("Accept", "application/json")
+	httpRequest.Header.Set("Connection", "close")
+
+	httpResponse, err := c.httpClient.Do(httpRequest)
+	if err != nil {
+		return jsonResponse, err
+	}
+
+	defer httpResponse.Body.Close()
+
+	jsonResponse, err = ioutil.ReadAll(httpResponse.Body)
+	if err != nil {
+		return jsonResponse, err
+	}
+
+	return jsonResponse, nil
 }

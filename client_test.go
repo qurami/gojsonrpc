@@ -1,21 +1,18 @@
 package gojsonrpc
 
 import (
-	"reflect"
 	"testing"
+	"time"
 )
 
 func TestThatNewClientReturnsTheExpectedClient(t *testing.T) {
 	mockURL := "http://mock.url"
 
-	expectedClient := &Client{
-		URL:     mockURL,
-		Timeout: defaultTimeout,
-	}
-
 	sut := NewClient(mockURL)
 
-	if !reflect.DeepEqual(sut, expectedClient) {
+	if sut.timeout != defaultTimeout ||
+		sut.proxyURL != "" ||
+		sut.httpClient.Timeout != time.Duration(defaultTimeout)*time.Second {
 		t.Fatal("expected Client was not received.")
 	}
 }
@@ -24,15 +21,12 @@ func TestThatSetTimeoutSucceeds(t *testing.T) {
 	mockURL := "http://mock.url"
 	mockTimeout := 123
 
-	expectedClient := &Client{
-		URL:     mockURL,
-		Timeout: 123,
-	}
-
 	sut := NewClient(mockURL)
 	sut.SetTimeout(mockTimeout)
 
-	if !reflect.DeepEqual(sut, expectedClient) {
+	if sut.timeout != 123 ||
+		sut.proxyURL != "" ||
+		sut.httpClient.Timeout != time.Duration(123)*time.Second {
 		t.Fatal("expected Client was not received.")
 	}
 }
@@ -41,16 +35,11 @@ func TestThatSetProxySucceeds(t *testing.T) {
 	mockURL := "http://mock.url"
 	mockProxyURL := "http://proxy.url:1234"
 
-	expectedClient := &Client{
-		URL:          mockURL,
-		Timeout:      defaultTimeout,
-		proxyAddress: mockProxyURL,
-	}
-
 	sut := NewClient(mockURL)
 	sut.SetHTTPProxy(mockProxyURL)
 
-	if !reflect.DeepEqual(sut, expectedClient) {
+	if sut.timeout != defaultTimeout ||
+		sut.proxyURL != mockProxyURL {
 		t.Fatal("expected Client was not received.")
 	}
 }
