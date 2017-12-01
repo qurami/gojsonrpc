@@ -1,5 +1,5 @@
 package gojsonrpc
 
 const (
-	DEFAULT_TIMEOUT = 300
+	defaultTimeout = 300
 )
