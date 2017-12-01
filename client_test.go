@@ -1,45 +1,30 @@
 package gojsonrpc
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
-	"time"
 )
 
-func TestThatNewClientReturnsTheExpectedClient(t *testing.T) {
-	mockURL := "http://mock.url"
+func TestThatSetHTTPProxyURLSetsAnHTTPProxyInClient(t *testing.T) {
+	proxyCalled := false
 
-	sut := NewClient(mockURL)
+	mockProxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxyCalled = true
+	}))
 
-	if sut.timeout != defaultTimeout ||
-		sut.proxyURL != "" ||
-		sut.httpClient.Timeout != time.Duration(defaultTimeout)*time.Second {
-		t.Fatal("expected Client was not received.")
-	}
-}
+	mockRPCServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}))
 
-func TestThatSetTimeoutSucceeds(t *testing.T) {
-	mockURL := "http://mock.url"
-	mockTimeout := 123
+	sut := NewClient(mockRPCServer.URL)
 
-	sut := NewClient(mockURL)
-	sut.SetTimeout(mockTimeout)
+	mockHTTPProxyURL, _ := url.Parse(mockProxy.URL)
 
-	if sut.timeout != 123 ||
-		sut.proxyURL != "" ||
-		sut.httpClient.Timeout != time.Duration(123)*time.Second {
-		t.Fatal("expected Client was not received.")
-	}
-}
+	sut.SetHTTPProxyURL(mockHTTPProxyURL)
+	_ = sut.Notify("SometMethod", nil)
 
-func TestThatSetProxySucceeds(t *testing.T) {
-	mockURL := "http://mock.url"
-	mockProxyURL := "http://proxy.url:1234"
-
-	sut := NewClient(mockURL)
-	sut.SetHTTPProxy(mockProxyURL)
-
-	if sut.timeout != defaultTimeout ||
-		sut.proxyURL != mockProxyURL {
-		t.Fatal("expected Client was not received.")
+	if !proxyCalled {
+		t.Fatal("expected proxy was not called")
 	}
 }

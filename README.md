@@ -16,7 +16,8 @@ func main() {
 	client := gojsonrpc.NewClient("http://mock.rpcservice.url")
 	
 	// you can optionally set a HTTP proxy for the connection
-	client.SetHTTPProxy("http://proxy.url:3128")
+	proxyURL, _ := "http://proxy.url:3128"
+	client.SetHTTPProxy(proxyURL)
 	
 	// you can also optionally set the connection timeout
 	client.SetTimeout(120)
