@@ -45,9 +45,15 @@ func (c *Client) SetHTTPProxyURL(proxyURL *url.URL) {
 	c.httpClient.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyURL)
 }
 
+// RunOptions represents options that can be used to configure a Run
+// operation.
+type RunOptions struct {
+	AdditionalHeaders map[string]string
+}
+
 // Run executes the given method having the given params setting the response
 // value in the given result interface.
-func (c *Client) Run(method string, params interface{}, result interface{}) error {
+func (c *Client) Run(method string, params interface{}, result interface{}, opts ...RunOptions) error {
 	request := NewRequest(method, params, RandInt(10000000, 99999999))
 
 	jsonRequest, err := json.Marshal(request)
@@ -55,7 +61,7 @@ func (c *Client) Run(method string, params interface{}, result interface{}) erro
 		return err
 	}
 
-	jsonResponse, err := c.sendJSONRequest(jsonRequest)
+	jsonResponse, err := c.sendJSONRequest(jsonRequest, opts...)
 	if err != nil {
 		return err
 	}
@@ -75,9 +81,13 @@ func (c *Client) Run(method string, params interface{}, result interface{}) erro
 	return nil
 }
 
+// NotifyOptions represents options that can be used to configure a Notify
+// operation.
+type NotifyOptions = RunOptions
+
 // Notify executes the given method with the given parameters.
 // Doesn't expect any result.
-func (c *Client) Notify(method string, params interface{}) error {
+func (c *Client) Notify(method string, params interface{}, opts ...NotifyOptions) error {
 	request := NewRequest(method, params, 0)
 
 	jsonRequest, err := json.Marshal(request)
@@ -85,7 +95,7 @@ func (c *Client) Notify(method string, params interface{}) error {
 		return err
 	}
 
-	_, err = c.sendJSONRequest(jsonRequest)
+	_, err = c.sendJSONRequest(jsonRequest, opts...)
 	if err != nil {
 		return err
 	}
@@ -93,7 +103,7 @@ func (c *Client) Notify(method string, params interface{}) error {
 	return nil
 }
 
-func (c *Client) sendJSONRequest(jsonRequest []byte) ([]byte, error) {
+func (c *Client) sendJSONRequest(jsonRequest []byte, opts ...RunOptions) ([]byte, error) {
 	var jsonResponse []byte
 
 	httpRequest, err := http.NewRequest("POST", c.serverURL, strings.NewReader(string(jsonRequest)))
@@ -101,6 +111,13 @@ func (c *Client) sendJSONRequest(jsonRequest []byte) ([]byte, error) {
 	httpRequest.Header.Set("Content-Length", "")
 	httpRequest.Header.Set("Accept", "application/json")
 	httpRequest.Header.Set("Connection", "close")
+
+	// Apply additional headers
+	for _, o := range opts {
+		for key, value := range o.AdditionalHeaders {
+			httpRequest.Header.Set(key, value)
+		}
+	}
 
 	httpResponse, err := c.httpClient.Do(httpRequest)
 	if err != nil {
