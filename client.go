@@ -53,7 +53,7 @@ type RunOptions struct {
 
 // Run executes the given method having the given params setting the response
 // value in the given result interface.
-func (c *Client) Run(method string, params interface{}, result interface{}, options ...RunOptions) error {
+func (c *Client) Run(method string, params interface{}, result interface{}, opts ...RunOptions) error {
 	request := NewRequest(method, params, RandInt(10000000, 99999999))
 
 	jsonRequest, err := json.Marshal(request)
@@ -61,7 +61,7 @@ func (c *Client) Run(method string, params interface{}, result interface{}, opti
 		return err
 	}
 
-	jsonResponse, err := c.sendJSONRequest(jsonRequest, options...)
+	jsonResponse, err := c.sendJSONRequest(jsonRequest, opts...)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ type NotifyOptions = RunOptions
 
 // Notify executes the given method with the given parameters.
 // Doesn't expect any result.
-func (c *Client) Notify(method string, params interface{}, options ...NotifyOptions) error {
+func (c *Client) Notify(method string, params interface{}, opts ...NotifyOptions) error {
 	request := NewRequest(method, params, 0)
 
 	jsonRequest, err := json.Marshal(request)
@@ -95,7 +95,7 @@ func (c *Client) Notify(method string, params interface{}, options ...NotifyOpti
 		return err
 	}
 
-	_, err = c.sendJSONRequest(jsonRequest, options...)
+	_, err = c.sendJSONRequest(jsonRequest, opts...)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (c *Client) Notify(method string, params interface{}, options ...NotifyOpti
 	return nil
 }
 
-func (c *Client) sendJSONRequest(jsonRequest []byte, options ...RunOptions) ([]byte, error) {
+func (c *Client) sendJSONRequest(jsonRequest []byte, opts ...RunOptions) ([]byte, error) {
 	var jsonResponse []byte
 
 	httpRequest, err := http.NewRequest("POST", c.serverURL, strings.NewReader(string(jsonRequest)))
@@ -113,7 +113,7 @@ func (c *Client) sendJSONRequest(jsonRequest []byte, options ...RunOptions) ([]b
 	httpRequest.Header.Set("Connection", "close")
 
 	// Apply additional headers
-	for _, o := range options {
+	for _, o := range opts {
 		for key, value := range o.AdditionalHeaders {
 			httpRequest.Header.Set(key, value)
 		}
