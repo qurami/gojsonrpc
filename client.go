@@ -61,21 +61,21 @@ func (c *Client) Run(method string, params interface{}, result interface{}, opts
 		return err
 	}
 
-	jsonResponse, err := c.sendJSONRequest(jsonRequest, opts...)
+	httpResponse, err := c.sendJSONRequest(jsonRequest, opts...)
 	if err != nil {
 		return err
 	}
 
-	response := NewResponse()
-	response.Result = result
+	jsonRPCResponse := NewResponse()
+	jsonRPCResponse.Result = result
 
-	err = json.Unmarshal(jsonResponse, &response)
+	err = json.Unmarshal(httpResponse, &jsonRPCResponse)
 	if err != nil {
 		return err
 	}
 
-	if response.hasError() {
-		return errors.New(response.Error.Message)
+	if jsonRPCResponse.hasError() {
+		return errors.New(jsonRPCResponse.Error.Message)
 	}
 
 	return nil
