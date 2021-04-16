@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -61,21 +62,21 @@ func (c *Client) Run(method string, params interface{}, result interface{}, opts
 		return err
 	}
 
-	jsonResponse, err := c.sendJSONRequest(jsonRequest, opts...)
+	httpResponse, err := c.sendJSONRequest(jsonRequest, opts...)
 	if err != nil {
 		return err
 	}
 
-	response := NewResponse()
-	response.Result = result
+	jsonRPCResponse := NewResponse()
+	jsonRPCResponse.Result = result
 
-	err = json.Unmarshal(jsonResponse, &response)
+	err = json.Unmarshal(httpResponse, &jsonRPCResponse)
 	if err != nil {
 		return err
 	}
 
-	if response.hasError() {
-		return errors.New(response.Error.Message)
+	if jsonRPCResponse.hasError() {
+		return errors.New(jsonRPCResponse.Error.Message)
 	}
 
 	return nil
@@ -104,8 +105,6 @@ func (c *Client) Notify(method string, params interface{}, opts ...NotifyOptions
 }
 
 func (c *Client) sendJSONRequest(jsonRequest []byte, opts ...RunOptions) ([]byte, error) {
-	var jsonResponse []byte
-
 	httpRequest, err := http.NewRequest("POST", c.serverURL, strings.NewReader(string(jsonRequest)))
 	httpRequest.Header.Set("Content-Type", "application/json")
 	httpRequest.Header.Set("Content-Length", "")
@@ -121,15 +120,19 @@ func (c *Client) sendJSONRequest(jsonRequest []byte, opts ...RunOptions) ([]byte
 
 	httpResponse, err := c.httpClient.Do(httpRequest)
 	if err != nil {
-		return jsonResponse, err
+		return nil, err
 	}
 
 	defer httpResponse.Body.Close()
 
-	jsonResponse, err = ioutil.ReadAll(httpResponse.Body)
+	httpResponseBody, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		return jsonResponse, err
+		return httpResponseBody, err
 	}
 
-	return jsonResponse, nil
+	if httpResponse.StatusCode >= http.StatusBadRequest {
+		return nil, fmt.Errorf("received HTTP status %d with body %s", httpResponse.StatusCode, httpResponseBody)
+	}
+
+	return httpResponseBody, nil
 }
